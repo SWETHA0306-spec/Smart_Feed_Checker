@@ -12,25 +12,27 @@ import { SensorSpecs } from '@/components/SensorSpecs';
 import {
   SensorInputs,
   calculateFeedQuality,
-  PRESET_SCENARIOS,
+  OFFICIAL_DATASET_PRESETS,
   MOCK_HISTORY,
   TestRecord,
+  LanguageCode,
 } from '@/lib/feedCalculators';
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
-  const [inputs, setInputs] = useState<SensorInputs>(PRESET_SCENARIOS[0].inputs);
+  const [currentLang, setCurrentLang] = useState<LanguageCode>('en');
+  const [inputs, setInputs] = useState<SensorInputs>(OFFICIAL_DATASET_PRESETS[0].inputs);
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
   const [sampleMeta, setSampleMeta] = useState({
     farmName: 'GreenPastures Dairy Farm',
-    batchId: 'BATCH-8821',
+    batchId: 'BATCH-F001',
     operator: 'Inspector R. Kumar',
   });
   const [history, setHistory] = useState<TestRecord[]>(MOCK_HISTORY);
   const [lastSavedId, setLastSavedId] = useState<string | null>(null);
 
-  // Live sensor streaming simulation effect
+  // Live telemetry stream effect
   useEffect(() => {
     if (!isStreaming) return;
 
@@ -59,8 +61,7 @@ export default function Home() {
     setIsAnalyzing(true);
     setTimeout(() => {
       setIsAnalyzing(false);
-      // Trigger confetti celebration on high quality scans
-      if (results.overallScore >= 80 && !results.isUreaAdulterated) {
+      if (results.qualityStatus === 'Good' || results.overallScore >= 80) {
         try {
           confetti({
             particleCount: 60,
@@ -83,7 +84,7 @@ export default function Home() {
     const newRecord: TestRecord = {
       id: newId,
       timestamp: formattedDate,
-      feedType: inputs.feedType,
+      feedType: inputs.feedType.toUpperCase(),
       inputs: { ...inputs },
       results: { ...results },
       certificateHash: hash,
@@ -113,6 +114,8 @@ export default function Home() {
         sampleCount={history.length}
         isStreaming={isStreaming}
         setIsStreaming={setIsStreaming}
+        currentLang={currentLang}
+        setCurrentLang={setCurrentLang}
       />
 
       {/* Navigation (Desktop Top Bar / Mobile Fixed Bottom Bar) */}
@@ -135,17 +138,17 @@ export default function Home() {
                 <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></div>
                 <div>
                   <h2 className="text-xs font-black uppercase tracking-wider text-white">
-                    Live Optical NIR Spectrometry & pH Audit Console
+                    Problem Statement 3 — Rapid Feed & Silage Quality System
                   </h2>
                   <p className="text-[11px] text-slate-400 mt-0.5">
-                    Adjust Wavelength sliders or activate live hardware stream for instant nutritional analysis.
+                    Select 1-Click PDF Data Presets (F001-F005) or adjust NIR & CV sliders for instant detection.
                   </p>
                 </div>
               </div>
 
               <div className="flex items-center gap-2">
                 <span className="text-[11px] font-mono bg-slate-950 text-slate-300 font-bold px-3 py-1 rounded-xl border border-slate-800">
-                  Farm: <strong className="text-emerald-400">{sampleMeta.farmName}</strong>
+                  Multilingual: <strong className="text-emerald-400 uppercase">{currentLang}</strong>
                 </span>
               </div>
             </div>
@@ -163,6 +166,7 @@ export default function Home() {
                   onAnalyze={handleAnalyze}
                   isAnalyzing={isAnalyzing}
                   isStreaming={isStreaming}
+                  currentLang={currentLang}
                 />
               </div>
 
@@ -172,6 +176,7 @@ export default function Home() {
                   results={results}
                   onSaveToHistory={handleSaveToHistory}
                   isSaved={currentSavedState}
+                  currentLang={currentLang}
                 />
               </div>
 
@@ -200,10 +205,10 @@ export default function Home() {
       <footer className="mt-auto py-6 bg-slate-950 text-slate-500 text-xs border-t border-slate-900 text-center">
         <div className="max-w-7xl mx-auto px-4">
           <p className="font-bold text-slate-400">
-            SmartFeed AI — Problem Statement ID 26111
+            SmartFeed AI — Problem Statement 3: Rapid Feed & Silage Quality System
           </p>
           <p className="mt-1 text-slate-600">
-            Rapid AI-Enabled Feed & Silage Quality Testing System for Dairy Farmers • Next.js 14 & Tailwind CSS
+            Portable AI, NIR & Computer Vision Solution for Dairy Farmers • ID 26111
           </p>
         </div>
       </footer>

@@ -1,26 +1,43 @@
+export type FeedCategory = 
+  | 'pellet' 
+  | 'silage' 
+  | 'mineral_mixture' 
+  | 'feed_mash' 
+  | 'alfalfa_hay' 
+  | 'mixed_ration';
+
 export interface SensorInputs {
-  moisture810nm: number; // Range 0 - 100 (% NIR reflection intensity)
-  protein940nm: number;  // Range 0 - 100 (% NIR reflection intensity)
-  fiber1050nm: number;   // Range 0 - 100 (% NIR reflection intensity)
-  nitrogenRatioIndex: number; // Range 10 - 100 (Urea adulteration indicator)
-  silagePh: number;      // Range 3.0 - 6.0 (Silage pH level)
-  feedType: 'corn_silage' | 'alfalfa_hay' | 'grass_hay' | 'mixed_ration';
+  moisture810nm: number;      // 0 - 100%
+  protein940nm: number;       // 0 - 100%
+  fiber1050nm: number;        // 0 - 100%
+  nitrogenRatioIndex: number; // 10 - 100 (Urea indicator)
+  silagePh: number;           // 3.0 - 6.0
+  aflatoxinPpb: number;       // 0 - 50 ppb (Mycotoxin level)
+  sandSilicaRatio: number;    // 0 - 30% (Sand contamination)
+  saltRatio: number;          // 0 - 20% (Salt level)
+  mouldPresence: boolean;     // Computer Vision / fungal indicator
+  feedType: FeedCategory;
 }
 
-export type SilageGradeType = 
-  | 'Excellent'
-  | 'Fair'
-  | 'Spoiled / High Aerobic Risk'
-  | 'Over-acidified / Clostridial Risk';
+export type QualityStatusType = 'Good' | 'Moderate' | 'Poor' | 'Unsafe';
 
 export interface AnalysisResults {
-  crudeProtein: number;       // Percentage (%)
-  moisture: number;           // Percentage (%)
-  crudeFiber: number;         // Percentage (%)
-  isUreaAdulterated: boolean; // Flag if urea > 65
-  silageGrade: SilageGradeType;
+  crudeProtein: number | 'NA';
+  moisture: number;
+  crudeFiber: number | 'NA';
+  energyTdn: number | 'NA';       // Total Digestible Nutrients (%)
+  energyNel: number | 'NA';       // Net Energy for Lactation (Mcal/kg)
+  aflatoxinPpb: number;
+  adulterationDetected: string[]; // List of detected adulterations
+  isUreaAdulterated: boolean;
+  isSandContaminated: boolean;
+  isExcessSalt: boolean;
+  isMouldPresent: boolean;
+  isAflatoxinUnsafe: boolean;
+  silageGrade: string;
   silagePhStatusColor: 'emerald' | 'amber' | 'rose';
-  overallScore: number;       // 0 - 100
+  overallScore: number;
+  qualityStatus: QualityStatusType;
   qualityRating: 'A+' | 'A' | 'B' | 'C' | 'D';
   advisories: {
     category: 'CRITICAL' | 'WARNING' | 'OPTIMAL' | 'RECOMMENDATION';
@@ -38,78 +55,214 @@ export interface TestRecord {
   certificateHash: string;
 }
 
-/**
- * Calculates Crude Protein, Moisture, Crude Fiber, Urea Adulteration,
- * Silage Quality Grade, composite score, and farmer advisories.
- */
+export type LanguageCode = 'en' | 'hi' | 'pa' | 'gu' | 'mr' | 'ta';
+
+export const LANGUAGES: { code: LanguageCode; name: string; native: string }[] = [
+  { code: 'en', name: 'English', native: 'English' },
+  { code: 'hi', name: 'Hindi', native: 'हिन्दी' },
+  { code: 'pa', name: 'Punjabi', native: 'ਪੰਜਾਬੀ' },
+  { code: 'gu', name: 'Gujarati', native: 'ગુજરાતી' },
+  { code: 'mr', name: 'Marathi', native: 'मराठी' },
+  { code: 'ta', name: 'Tamil', native: 'தமிழ்' },
+];
+
+export const TRANSLATIONS: Record<LanguageCode, Record<string, string>> = {
+  en: {
+    title: 'SmartFeed AI',
+    subtitle: 'Rapid Feed & Silage Quality Testing System | PS ID 26111',
+    runAudit: 'Execute Real-Time AI Quality Audit',
+    qualityStatus: 'Overall Quality Status',
+    adulteration: 'Adulteration & Contamination',
+    protein: 'Crude Protein',
+    moisture: 'Moisture Content',
+    fiber: 'Crude Fiber',
+    energy: 'Energy Value (TDN)',
+    aflatoxin: 'Aflatoxin (ppb)',
+    pH: 'Silage pH',
+    certify: 'Certify & Issue Digital QR Certificate',
+    presets: 'Official Problem Statement Data Samples',
+    cvScan: 'Computer Vision Optical Texture Scanner',
+  },
+  hi: {
+    title: 'स्मार्टफीड एआई',
+    subtitle: 'पशु आहार एवं साइलेज गुणवत्ता परीक्षण प्रणाली | समस्या आईडी 26111',
+    runAudit: 'वास्तविक समय एआई गुणवत्ता जांच करें',
+    qualityStatus: 'समग्र गुणवत्ता स्थिति',
+    adulteration: 'मिलावट और संदूषण',
+    protein: 'कच्चा प्रोटीन (Crude Protein)',
+    moisture: 'नमी की मात्रा (Moisture)',
+    fiber: 'फाइबर (Fiber)',
+    energy: 'ऊर्जा मूल्य (TDN)',
+    aflatoxin: 'एफलाटॉक्सिन / फंगस (ppb)',
+    pH: 'साइलेज पीएच',
+    certify: 'प्रमाणित करें और डिजिटल क्यूआर प्रमाणपत्र जारी करें',
+    presets: 'आधिकारिक नमूना डेटासेट (F001-F005)',
+    cvScan: 'कंप्यूटर विजन ऑप्टिकल टेक्सचर स्कैनर',
+  },
+  pa: {
+    title: 'ਸਮਾਰਟਫੀਡ ਏਆਈ',
+    subtitle: 'ਪਸ਼ੂ ਖੁਰਾਕ ਅਤੇ ਸਾਈਲੇਜ ਗੁਣਵੱਤਾ ਟੈਸਟਿੰਗ ਸਿਸਟਮ',
+    runAudit: 'ਰੀਅਲ-ਟਾਈਮ ਏਆਈ ਗੁਣਵੱਤਾ ਦੀ ਜਾਂਚ ਕਰੋ',
+    qualityStatus: 'ਕੁੱਲ ਗੁਣਵੱਤਾ ਦੀ ਸਥਿਤੀ',
+    adulteration: 'ਮਿਲਾਵਟ ਅਤੇ ਦੂਸ਼ਿਤਤਾ',
+    protein: 'ਪ੍ਰੋਟੀਨ (Crude Protein)',
+    moisture: 'ਨਮੀ (Moisture)',
+    fiber: 'ਫਾਈਬਰ (Fiber)',
+    energy: 'ਊਰਜਾ ਮੁੱਲ (TDN)',
+    aflatoxin: 'ਐਫਲਾਟੌਕਸਿਨ (ppb)',
+    pH: 'ਸਾਈਲੇਜ pH',
+    certify: 'ਡਿਜੀਟਲ QR ਸਰਟੀਫਿਕੇਟ ਜਾਰੀ ਕਰੋ',
+    presets: 'ਅਧਿਕਾਰਤ ਨਮੂਨਾ ਡਾਟਾਸੈਟ',
+    cvScan: 'ਕੰਪਿਊਟਰ ਵਿਜ਼ਨ ਸਕੈਨਰ',
+  },
+  gu: {
+    title: 'સ્માર્ટફીડ એઆઈ',
+    subtitle: 'પશુ આહાર અને સાયલેજ ગુણવત્તા પરીક્ષણ સિસ્ટમ',
+    runAudit: 'રીઅલ-ટાઇમ AI ગુણવત્તા તપાસ કરો',
+    qualityStatus: 'સમગ્ર ગુણવત્તા સ્થિતિ',
+    adulteration: 'ભેળસેળ અને દૂષણ',
+    protein: 'પ્રોટીન (Protein)',
+    moisture: 'ભેજનું પ્રમાણ (Moisture)',
+    fiber: 'ફાઇબર (Fiber)',
+    energy: 'ઊર્જા મૂલ્ય (TDN)',
+    aflatoxin: 'એફલાટોક્સિન (ppb)',
+    pH: 'સાયલેજ pH',
+    certify: 'ડિજિટલ QR પ્રમાણપત્ર આપો',
+    presets: 'સત્તાવાર નમૂના ડેટા સેટ',
+    cvScan: 'કમ્પ્યુટર વિઝન સ્કેનર',
+  },
+  mr: {
+    title: 'स्मार्टफीड एआय',
+    subtitle: 'पशुआहार व सायलेज गुणवत्ता तपासणी प्रणाली',
+    runAudit: 'रिअल-टाइम AI गुणवत्ता तपासणी करा',
+    qualityStatus: 'एकूण गुणवत्ता स्थिती',
+    adulteration: 'भेसळ आणि दूषित घटक',
+    protein: 'क्रूड प्रोटीन (Protein)',
+    moisture: 'ओलसरपणा (Moisture)',
+    fiber: 'फायबर (Fiber)',
+    energy: 'ऊर्जा मूल्य (TDN)',
+    aflatoxin: 'अॅफलाटॉक्सिन (ppb)',
+    pH: 'सायलेज पीएच',
+    certify: 'डिजिटल क्यूआर प्रमाणपत्र जारी करा',
+    presets: 'अधिकृत नमुना डेटा संच',
+    cvScan: 'संगणक दृष्टी टेक्सचर स्कॅनर',
+  },
+  ta: {
+    title: 'ஸ்மார்ட்ஃபீட் AI',
+    subtitle: 'கால்நடை தீவனம் மற்றும் சைலேஜ் தர சோதனை முறைமை',
+    runAudit: 'AI தர சோதனையை இயக்கவும்',
+    qualityStatus: 'ஒட்டுமொத்த தர நிலை',
+    adulteration: 'கலப்படம் மற்றும் மாசுபாடு',
+    protein: 'புரதம் (Protein)',
+    moisture: 'ஈரப்பதம் (Moisture)',
+    fiber: 'நார்ச்சத்து (Fiber)',
+    energy: 'ஆற்றல் மதிப்பு (TDN)',
+    aflatoxin: 'அஃப்லாடாக்சின் (ppb)',
+    pH: 'சைலேஜ் pH',
+    certify: 'டிஜிட்டல் QR சான்றிதழ் வழங்கவும்',
+    presets: 'அதிகாரப்பூர்வ மாதிரி தரவுத் தொகுப்பு',
+    cvScan: 'கம்ப்யூட்டர் விஷன் ஸ்கேனர்',
+  },
+};
+
 export function calculateFeedQuality(inputs: SensorInputs): AnalysisResults {
-  const { moisture810nm, protein940nm, fiber1050nm, nitrogenRatioIndex, silagePh, feedType } = inputs;
+  const {
+    moisture810nm,
+    protein940nm,
+    fiber1050nm,
+    nitrogenRatioIndex,
+    silagePh,
+    aflatoxinPpb,
+    sandSilicaRatio,
+    saltRatio,
+    mouldPresence,
+    feedType,
+  } = inputs;
 
-  // 1. Calculate Core Chemical Parameters via Spectral Calibration Formulas
-  // Base Moisture calculation calibrated against 810nm water absorption band
-  const rawMoisture = 8 + (moisture810nm * 0.72);
-  const moisture = Math.round(Math.min(95, Math.max(5, rawMoisture)) * 10) / 10;
+  const isMineral = feedType === 'mineral_mixture';
 
-  // Crude Protein calibrated against 940nm N-H overtone band + Urea correction
-  const baseProtein = 4 + (protein940nm * 0.24);
-  const ureaOffset = nitrogenRatioIndex > 65 ? (nitrogenRatioIndex - 65) * 0.08 : 0;
-  const crudeProtein = Math.round(Math.min(45, Math.max(2, baseProtein + ureaOffset)) * 10) / 10;
+  // 1. Calculate Core Parameters
+  const moisture = Math.round(Math.min(95, Math.max(2, 6 + (moisture810nm * 0.76))) * 10) / 10;
+  
+  const crudeProtein = isMineral 
+    ? 'NA' 
+    : Math.round(Math.min(45, Math.max(3, (protein940nm * 0.28) + (nitrogenRatioIndex > 65 ? (nitrogenRatioIndex - 65) * 0.08 : 0))) * 10) / 10;
 
-  // Crude Fiber calibrated against 1050nm C-H overtone band
-  const rawFiber = 10 + (fiber1050nm * 0.42);
-  const crudeFiber = Math.round(Math.min(60, Math.max(5, rawFiber)) * 10) / 10;
+  const crudeFiber = isMineral 
+    ? 'NA' 
+    : Math.round(Math.min(55, Math.max(4, 10 + (fiber1050nm * 0.42))) * 10) / 10;
 
-  // 2. Urea Adulteration Check
+  // Energy Value TDN & NEL
+  let energyTdn: number | 'NA' = 'NA';
+  let energyNel: number | 'NA' = 'NA';
+
+  if (typeof crudeFiber === 'number') {
+    const rawTdn = 88.9 - (0.779 * crudeFiber);
+    energyTdn = Math.round(Math.min(85, Math.max(40, rawTdn)) * 10) / 10;
+    energyNel = Math.round(Math.min(2.2, Math.max(0.8, (energyTdn * 0.0245) - 0.12)) * 100) / 100;
+  }
+
+  // 2. Adulteration & Contamination Checks
+  const adulterationDetected: string[] = [];
   const isUreaAdulterated = nitrogenRatioIndex > 65;
+  const isSandContaminated = sandSilicaRatio > 8;
+  const isExcessSalt = saltRatio > 5;
+  const isMouldPresent = mouldPresence || aflatoxinPpb >= 10;
+  const isAflatoxinUnsafe = aflatoxinPpb >= 18;
 
-  // 3. Silage Quality Grading based on pH
-  let silageGrade: SilageGradeType = 'Fair';
-  let silagePhStatusColor: 'emerald' | 'amber' | 'rose' = 'amber';
+  if (isUreaAdulterated) adulterationDetected.push('Urea Adulteration');
+  if (isSandContaminated) adulterationDetected.push('Sand/Silica Contamination');
+  if (isExcessSalt) adulterationDetected.push('Excess Salt');
+  if (isMouldPresent) adulterationDetected.push('Mould / Fungal Presence');
+  if (isAflatoxinUnsafe) adulterationDetected.push('Aflatoxin Mycotoxins (>18 ppb)');
+  if (silagePh > 4.8 && feedType === 'silage') adulterationDetected.push('Spoilage Detected');
 
-  if (silagePh >= 3.8 && silagePh <= 4.2) {
-    silageGrade = 'Excellent';
-    silagePhStatusColor = 'emerald';
-  } else if (silagePh >= 4.3 && silagePh <= 4.8) {
-    silageGrade = 'Fair';
-    silagePhStatusColor = 'amber';
-  } else if (silagePh > 4.8) {
-    silageGrade = 'Spoiled / High Aerobic Risk';
-    silagePhStatusColor = 'rose';
+  if (adulterationDetected.length === 0) {
+    adulterationDetected.push('None');
+  }
+
+  // 3. Silage pH Classification
+  let silageGrade = 'Optimal Fermentation';
+  let silagePhStatusColor: 'emerald' | 'amber' | 'rose' = 'emerald';
+
+  if (feedType === 'silage') {
+    if (silagePh >= 3.8 && silagePh <= 4.2) {
+      silageGrade = 'Excellent (Optimal Lactic Acid)';
+      silagePhStatusColor = 'emerald';
+    } else if (silagePh >= 4.3 && silagePh <= 4.8) {
+      silageGrade = 'Fair (Moderate Quality)';
+      silagePhStatusColor = 'amber';
+    } else if (silagePh > 4.8) {
+      silageGrade = 'Spoiled / High Aerobic Risk';
+      silagePhStatusColor = 'rose';
+    } else {
+      silageGrade = 'Over-acidified (<3.8)';
+      silagePhStatusColor = 'rose';
+    }
   } else {
-    // pH < 3.8
-    silageGrade = 'Over-acidified / Clostridial Risk';
-    silagePhStatusColor = 'rose';
+    silageGrade = 'N/A (Dry Feed)';
   }
 
-  // 4. Overall Score Calculation (0 - 100)
-  let score = 85;
+  // 4. Quality Status Determination (Good / Moderate / Poor / Unsafe)
+  let qualityStatus: QualityStatusType = 'Good';
+  let score = 90;
 
-  // Protein evaluation
-  if (crudeProtein >= 16) score += 5;
-  else if (crudeProtein < 10) score -= 15;
-
-  // pH penalties
-  if (silageGrade === 'Excellent') score += 10;
-  else if (silageGrade === 'Fair') score -= 5;
-  else score -= 25; // Spoiled or over-acidified
-
-  // Urea penalty
-  if (isUreaAdulterated) {
-    score -= 35;
+  if (isAflatoxinUnsafe || isSandContaminated || (isUreaAdulterated && typeof crudeProtein === 'number' && crudeProtein > 30)) {
+    qualityStatus = 'Unsafe';
+    score = 30;
+  } else if (isUreaAdulterated || isExcessSalt || (feedType === 'silage' && silagePh > 4.8)) {
+    qualityStatus = 'Poor';
+    score = 48;
+  } else if (isMouldPresent || (feedType === 'silage' && silagePh > 4.2)) {
+    qualityStatus = 'Moderate';
+    score = 68;
+  } else {
+    qualityStatus = 'Good';
+    score = 92;
   }
 
-  // Moisture evaluation based on feed type
-  if (feedType === 'corn_silage' || feedType === 'mixed_ration') {
-    if (moisture >= 60 && moisture <= 68) score += 5;
-    else if (moisture > 72 || moisture < 50) score -= 15;
-  } else if (feedType === 'alfalfa_hay' || feedType === 'grass_hay') {
-    if (moisture <= 16) score += 5;
-    else if (moisture > 20) score -= 20; // Mold hazard
-  }
+  const overallScore = Math.max(0, Math.min(100, score));
 
-  const overallScore = Math.max(0, Math.min(100, Math.round(score)));
-
-  // Quality Rating Letter Grade
   let qualityRating: 'A+' | 'A' | 'B' | 'C' | 'D' = 'B';
   if (overallScore >= 90) qualityRating = 'A+';
   else if (overallScore >= 80) qualityRating = 'A';
@@ -117,81 +270,54 @@ export function calculateFeedQuality(inputs: SensorInputs): AnalysisResults {
   else if (overallScore >= 50) qualityRating = 'C';
   else qualityRating = 'D';
 
-  // 5. Dynamic Farmer Advisories Generation
+  // 5. Dynamic Farmer Advisories
   const advisories: AnalysisResults['advisories'] = [];
 
-  // Urea Advisory
+  if (isAflatoxinUnsafe) {
+    advisories.push({
+      category: 'CRITICAL',
+      title: 'AFLATOXIN MYCOTOXIN HAZARD (>18 ppb)',
+      description: `Aflatoxin level measured at ${aflatoxinPpb} ppb exceeds legal safety limits for lactating dairy cattle. High risk of milk toxin excretion (Aflatoxin M1) and liver toxicity.`
+    });
+  }
+
+  if (isSandContaminated) {
+    advisories.push({
+      category: 'WARNING',
+      title: 'SAND & SILICA CONTAMINATION DETECTED',
+      description: `Sand/Silica ratio at ${sandSilicaRatio}% poses high risk of abomasal impaction and dental wear in cattle. Screen and winnow feed before serving.`
+    });
+  }
+
+  if (isExcessSalt) {
+    advisories.push({
+      category: 'WARNING',
+      title: 'EXCESS SALT ADULTERATION',
+      description: `Salt concentration at ${saltRatio}% is excessively high. May cause electrolyte imbalance, water intoxication, and reduced feed intake.`
+    });
+  }
+
   if (isUreaAdulterated) {
     advisories.push({
       category: 'CRITICAL',
-      title: 'CRITICAL: Synthetic Urea Adulteration Detected!',
-      description: `Nitrogen Index measured at ${nitrogenRatioIndex} (Threshold: 65). Elevated non-protein nitrogen (NPN) poses high ammonia toxicity risk to ruminants. Do not feed to young calves or pregnant cows without professional nutrition balancing.`
+      title: 'SYNTHETIC UREA ADULTERATION',
+      description: `Nitrogen ratio ${nitrogenRatioIndex} indicates artificial non-protein nitrogen. Do not feed to young pre-weaned calves.`
     });
   }
 
-  // Silage pH Advisory
-  if (silagePh > 4.8) {
+  if (feedType === 'silage' && silagePh > 4.8) {
     advisories.push({
       category: 'WARNING',
-      title: 'High Silage pH - Spoiled / Aerobic Risk',
-      description: `pH level of ${silagePh} indicates incomplete anaerobic fermentation. High vulnerability to yeast, mold, and mycotoxins. Ensure tight pit compression and treat feed face with organic propionic acid.`
+      title: 'SILAGE SPOILAGE DETECTED (pH > 4.8)',
+      description: `Incomplete anaerobic fermentation. Treat face with organic propionic acid and increase compaction.`
     });
-  } else if (silagePh < 3.8) {
-    advisories.push({
-      category: 'WARNING',
-      title: 'Over-Acidified Silage (pH < 3.8)',
-      description: `Excessive acidic content may cause sub-acute ruminal acidosis (SARA) and decrease dry matter intake (DMI). Mix with clean dry hay to buffer dietary pH.`
-    });
-  } else if (silagePh >= 3.8 && silagePh <= 4.2) {
+  }
+
+  if (qualityStatus === 'Good') {
     advisories.push({
       category: 'OPTIMAL',
-      title: 'Optimal Lactic Acid Fermentation',
-      description: `Silage pH ${silagePh} is in the golden zone (3.8 - 4.2). Excellent stability, high palatability, and maximum nutrient retention.`
-    });
-  }
-
-  // Moisture Advisory
-  if (feedType.includes('hay') && moisture > 18) {
-    advisories.push({
-      category: 'WARNING',
-      title: 'High Moisture Hay - Mold Hazard',
-      description: `Hay moisture at ${moisture}% exceeds safe dry storage threshold (16%). High risk of heating, spontaneous combustion, and internal mold spore buildup.`
-    });
-  } else if ((feedType === 'corn_silage' || feedType === 'mixed_ration') && moisture < 55) {
-    advisories.push({
-      category: 'RECOMMENDATION',
-      title: 'Low Moisture Silage',
-      description: `Moisture at ${moisture}% is drier than ideal silage target (60-65%). May hinder oxygen exclusion during packing.`
-    });
-  }
-
-  // Protein Advisory
-  if (crudeProtein >= 16) {
-    advisories.push({
-      category: 'OPTIMAL',
-      title: 'High Crude Protein Yield',
-      description: `Crude Protein content of ${crudeProtein}% provides robust amino acid profile suitable for high-yielding lactating cows (25+ L/day).`
-    });
-  } else if (crudeProtein < 12) {
-    advisories.push({
-      category: 'RECOMMENDATION',
-      title: 'Protein Supplementation Advised',
-      description: `Crude Protein is low at ${crudeProtein}%. Consider fortifying total mixed ration (TMR) with soybean meal, mustard cake, or leguminous forage.`
-    });
-  }
-
-  // Calf Safety Advisory
-  if (isUreaAdulterated || silagePh > 4.8) {
-    advisories.push({
-      category: 'CRITICAL',
-      title: 'Calf & Pre-Weaned Heifer Safety Alert',
-      description: 'DO NOT FEED THIS BATCH TO PRE-WEANED CALVES. Undeveloped rumen microbial flora cannot safely metabolize adulterated NPN or moldy silage.'
-    });
-  } else {
-    advisories.push({
-      category: 'RECOMMENDATION',
-      title: 'Calf & Replacement Heifer Safe',
-      description: 'Tested sample parameters fall within safe biological limits for growing calves and dry heifers.'
+      title: 'EXCELLENT NUTRITIONAL BALANCE',
+      description: `All nutritional and safety parameters are well within optimal physiological limits for high-yield dairy cattle.`
     });
   }
 
@@ -199,92 +325,131 @@ export function calculateFeedQuality(inputs: SensorInputs): AnalysisResults {
     crudeProtein,
     moisture,
     crudeFiber,
+    energyTdn,
+    energyNel,
+    aflatoxinPpb,
+    adulterationDetected,
     isUreaAdulterated,
+    isSandContaminated,
+    isExcessSalt,
+    isMouldPresent,
+    isAflatoxinUnsafe,
     silageGrade,
     silagePhStatusColor,
     overallScore,
+    qualityStatus,
     qualityRating,
-    advisories
+    advisories,
   };
 }
 
 /**
- * Pre-defined test sample scenarios for instant demonstration
+ * Official Problem Statement 3 Dummy Dataset Presets (F001 - F005)
  */
-export const PRESET_SCENARIOS: { name: string; description: string; inputs: SensorInputs }[] = [
+export const OFFICIAL_DATASET_PRESETS: {
+  id: string;
+  name: string;
+  feedTypeLabel: string;
+  inputs: SensorInputs;
+  expectedStatus: QualityStatusType;
+}[] = [
   {
-    name: 'Optimal Corn Silage',
-    description: 'High quality silage with ideal pH 4.0 and balanced nutrients',
+    id: 'F001',
+    name: 'F001 - Cattle Feed Pellet',
+    feedTypeLabel: 'Cattle Feed Pellet',
+    expectedStatus: 'Good',
     inputs: {
-      moisture810nm: 72,
-      protein940nm: 45,
-      fiber1050nm: 40,
-      nitrogenRatioIndex: 32,
-      silagePh: 4.0,
-      feedType: 'corn_silage'
-    }
-  },
-  {
-    name: 'Adulterated High-Urea Feed',
-    description: 'Elevated Nitrogen ratio simulating artificial urea chemical padding',
-    inputs: {
-      moisture810nm: 45,
-      protein940nm: 78,
-      fiber1050nm: 35,
-      nitrogenRatioIndex: 82, // Triggers urea alert > 65
-      silagePh: 4.5,
-      feedType: 'mixed_ration'
-    }
-  },
-  {
-    name: 'Spoiled / Aerobic Silage',
-    description: 'Unstable high pH silage exposed to moisture and air ingress',
-    inputs: {
-      moisture810nm: 85,
-      protein940nm: 25,
-      fiber1050nm: 65,
-      nitrogenRatioIndex: 40,
-      silagePh: 5.3, // Triggers spoiled silage alert
-      feedType: 'corn_silage'
-    }
-  },
-  {
-    name: 'Premium Alfalfa Hay',
-    description: 'High-protein leguminous forage with low moisture for long storage',
-    inputs: {
-      moisture810nm: 8,
-      protein940nm: 62,
-      fiber1050nm: 32,
+      moisture810nm: 6,
+      protein940nm: 60,
+      fiber1050nm: 10,
       nitrogenRatioIndex: 25,
       silagePh: 6.0,
-      feedType: 'alfalfa_hay'
-    }
-  }
+      aflatoxinPpb: 5,
+      sandSilicaRatio: 2,
+      saltRatio: 1,
+      mouldPresence: false,
+      feedType: 'pellet',
+    },
+  },
+  {
+    id: 'F002',
+    name: 'F002 - Silage (Mould Presence)',
+    feedTypeLabel: 'Silage',
+    expectedStatus: 'Moderate',
+    inputs: {
+      moisture810nm: 78,
+      protein940nm: 18,
+      fiber1050nm: 34,
+      nitrogenRatioIndex: 30,
+      silagePh: 4.1,
+      aflatoxinPpb: 12,
+      sandSilicaRatio: 3,
+      saltRatio: 1,
+      mouldPresence: true,
+      feedType: 'silage',
+    },
+  },
+  {
+    id: 'F003',
+    name: 'F003 - Mineral Mixture (Excess Salt)',
+    feedTypeLabel: 'Mineral Mixture',
+    expectedStatus: 'Poor',
+    inputs: {
+      moisture810nm: 0,
+      protein940nm: 0,
+      fiber1050nm: 0,
+      nitrogenRatioIndex: 20,
+      silagePh: 6.0,
+      aflatoxinPpb: 0,
+      sandSilicaRatio: 4,
+      saltRatio: 12, // Excess Salt
+      mouldPresence: false,
+      feedType: 'mineral_mixture',
+    },
+  },
+  {
+    id: 'F004',
+    name: 'F004 - Feed Mash (Sand Contamination)',
+    feedTypeLabel: 'Feed Mash',
+    expectedStatus: 'Unsafe',
+    inputs: {
+      moisture810nm: 8,
+      protein940nm: 50,
+      fiber1050nm: 14,
+      nitrogenRatioIndex: 35,
+      silagePh: 6.0,
+      aflatoxinPpb: 20, // High Aflatoxin
+      sandSilicaRatio: 16, // High Sand
+      saltRatio: 2,
+      mouldPresence: true,
+      feedType: 'feed_mash',
+    },
+  },
+  {
+    id: 'F005',
+    name: 'F005 - Silage (Spoilage Detected)',
+    feedTypeLabel: 'Silage',
+    expectedStatus: 'Poor',
+    inputs: {
+      moisture810nm: 84,
+      protein940nm: 15,
+      fiber1050nm: 42,
+      nitrogenRatioIndex: 40,
+      silagePh: 5.8, // High pH Spoilage
+      aflatoxinPpb: 8,
+      sandSilicaRatio: 3,
+      saltRatio: 1,
+      mouldPresence: true,
+      feedType: 'silage',
+    },
+  },
 ];
 
-export const MOCK_HISTORY: TestRecord[] = [
-  {
-    id: 'SMP-2026-0914',
-    timestamp: '2026-09-14 14:30',
-    feedType: 'corn_silage',
-    inputs: PRESET_SCENARIOS[0].inputs,
-    results: calculateFeedQuality(PRESET_SCENARIOS[0].inputs),
-    certificateHash: '0x8f3a...91bc'
-  },
-  {
-    id: 'SMP-2026-0912',
-    timestamp: '2026-09-12 09:15',
-    feedType: 'mixed_ration',
-    inputs: PRESET_SCENARIOS[1].inputs,
-    results: calculateFeedQuality(PRESET_SCENARIOS[1].inputs),
-    certificateHash: '0x7e1b...42ad'
-  },
-  {
-    id: 'SMP-2026-0910',
-    timestamp: '2026-09-10 16:45',
-    feedType: 'alfalfa_hay',
-    inputs: PRESET_SCENARIOS[3].inputs,
-    results: calculateFeedQuality(PRESET_SCENARIOS[3].inputs),
-    certificateHash: '0x3c9f...88e1'
-  }
-];
+export const MOCK_HISTORY: TestRecord[] = OFFICIAL_DATASET_PRESETS.map((preset) => ({
+  id: preset.id,
+  timestamp: '2026-09-15 12:00',
+  feedType: preset.feedTypeLabel,
+  inputs: preset.inputs,
+  results: calculateFeedQuality(preset.inputs),
+  certificateHash: '0x' + Math.floor(Math.random() * 100000000).toString(16),
+}));
