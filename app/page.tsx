@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import { Header } from '@/components/Header';
 import { Navigation, TabType } from '@/components/Navigation';
@@ -21,29 +21,57 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   const [inputs, setInputs] = useState<SensorInputs>(PRESET_SCENARIOS[0].inputs);
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
+  const [isStreaming, setIsStreaming] = useState<boolean>(false);
+  const [sampleMeta, setSampleMeta] = useState({
+    farmName: 'GreenPastures Dairy Farm',
+    batchId: 'BATCH-8821',
+    operator: 'Inspector R. Kumar',
+  });
   const [history, setHistory] = useState<TestRecord[]>(MOCK_HISTORY);
   const [lastSavedId, setLastSavedId] = useState<string | null>(null);
 
-  // Real-time calculated results using useMemo for instant reactivity
+  // Live sensor streaming simulation effect
+  useEffect(() => {
+    if (!isStreaming) return;
+
+    const interval = setInterval(() => {
+      setInputs((prev) => {
+        const deltaM = (Math.random() - 0.5) * 2;
+        const deltaP = (Math.random() - 0.5) * 2;
+        const deltaF = (Math.random() - 0.5) * 2;
+
+        return {
+          ...prev,
+          moisture810nm: Math.min(100, Math.max(0, Math.round(prev.moisture810nm + deltaM))),
+          protein940nm: Math.min(100, Math.max(0, Math.round(prev.protein940nm + deltaP))),
+          fiber1050nm: Math.min(100, Math.max(0, Math.round(prev.fiber1050nm + deltaF))),
+        };
+      });
+    }, 1200);
+
+    return () => clearInterval(interval);
+  }, [isStreaming]);
+
+  // Real-time calculated results using useMemo
   const results = useMemo(() => calculateFeedQuality(inputs), [inputs]);
 
   const handleAnalyze = () => {
     setIsAnalyzing(true);
     setTimeout(() => {
       setIsAnalyzing(false);
-      // Trigger confetti celebration on good scans
+      // Trigger confetti celebration on high quality scans
       if (results.overallScore >= 80 && !results.isUreaAdulterated) {
         try {
           confetti({
-            particleCount: 50,
-            spread: 60,
+            particleCount: 60,
+            spread: 70,
             origin: { y: 0.6 },
           });
         } catch {
-          // Ignore if confetti context missing
+          // ignore
         }
       }
-    }, 400);
+    }, 450);
   };
 
   const handleSaveToHistory = () => {
@@ -64,11 +92,10 @@ export default function Home() {
     setHistory((prev) => [newRecord, ...prev]);
     setLastSavedId(newId);
 
-    // Confetti celebration
     try {
       confetti({
-        particleCount: 80,
-        spread: 70,
+        particleCount: 90,
+        spread: 80,
         origin: { y: 0.5 },
       });
     } catch {
@@ -79,11 +106,16 @@ export default function Home() {
   const currentSavedState = lastSavedId !== null && history[0]?.id === lastSavedId;
 
   return (
-    <div className="min-h-screen bg-slate-100/70 text-slate-900 flex flex-col">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-emerald-500 selection:text-slate-950">
+      
       {/* Top Header */}
-      <Header sampleCount={history.length} />
+      <Header
+        sampleCount={history.length}
+        isStreaming={isStreaming}
+        setIsStreaming={setIsStreaming}
+      />
 
-      {/* Navigation (Desktop Top / Mobile Bottom) */}
+      {/* Navigation (Desktop Top Bar / Mobile Fixed Bottom Bar) */}
       <Navigation
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -97,37 +129,44 @@ export default function Home() {
         {activeTab === 'dashboard' && (
           <div className="space-y-6">
             
-            {/* Mobile & Desktop Banner */}
-            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
-              <div>
-                <h2 className="text-sm font-extrabold text-slate-900">
-                  Live NIR Spectral Feed Quality Scanner
-                </h2>
-                <p className="text-xs text-slate-500">
-                  Adjust NIR spectral inputs below or choose a scenario preset for instant analysis.
-                </p>
+            {/* Top Info Strip */}
+            <div className="bg-slate-900/80 backdrop-blur-md p-4 rounded-3xl border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xl">
+              <div className="flex items-center gap-3">
+                <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></div>
+                <div>
+                  <h2 className="text-xs font-black uppercase tracking-wider text-white">
+                    Live Optical NIR Spectrometry & pH Audit Console
+                  </h2>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    Adjust Wavelength sliders or activate live hardware stream for instant nutritional analysis.
+                  </p>
+                </div>
               </div>
-              <div className="hidden sm:block text-right">
-                <span className="text-xs font-mono bg-agri-100 text-agri-800 font-bold px-3 py-1 rounded-lg">
-                  ISO-12099 NIR Model Active
+
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-mono bg-slate-950 text-slate-300 font-bold px-3 py-1 rounded-xl border border-slate-800">
+                  Farm: <strong className="text-emerald-400">{sampleMeta.farmName}</strong>
                 </span>
               </div>
             </div>
 
-            {/* Responsive Dual-Column Grid (Single column on mobile, 2 columns on desktop) */}
+            {/* Responsive Dual-Column Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
               
-              {/* Left Column: Sensor Simulator Controls */}
+              {/* Left Column: Sensor Simulator */}
               <div className="lg:col-span-6 space-y-6">
                 <SensorSimulator
                   inputs={inputs}
                   setInputs={setInputs}
+                  sampleMeta={sampleMeta}
+                  setSampleMeta={setSampleMeta}
                   onAnalyze={handleAnalyze}
                   isAnalyzing={isAnalyzing}
+                  isStreaming={isStreaming}
                 />
               </div>
 
-              {/* Right Column: Real-time Analytics & Advisory Results */}
+              {/* Right Column: Analytics & Advisories */}
               <div className="lg:col-span-6 space-y-6">
                 <AnalysisResults
                   results={results}
@@ -158,13 +197,13 @@ export default function Home() {
       </main>
 
       {/* Footer */}
-      <footer className="mt-auto py-6 bg-slate-900 text-slate-400 text-xs border-t border-slate-800 text-center">
+      <footer className="mt-auto py-6 bg-slate-950 text-slate-500 text-xs border-t border-slate-900 text-center">
         <div className="max-w-7xl mx-auto px-4">
-          <p className="font-semibold text-slate-300">
+          <p className="font-bold text-slate-400">
             SmartFeed AI — Problem Statement ID 26111
           </p>
-          <p className="mt-1 text-slate-500">
-            Rapid AI-Enabled Feed & Silage Quality Testing System for Dairy Farmers • Built with Next.js 14 & Tailwind CSS
+          <p className="mt-1 text-slate-600">
+            Rapid AI-Enabled Feed & Silage Quality Testing System for Dairy Farmers • Next.js 14 & Tailwind CSS
           </p>
         </div>
       </footer>
