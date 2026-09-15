@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { AnalysisResults as ResultsType, LanguageCode, TRANSLATIONS } from '@/lib/feedCalculators';
-import { AlertTriangle, CheckCircle2, AlertOctagon, Info, Save, Award, Activity, Droplets, Dna, Layers, Zap, Flame, ShieldAlert, ZapIcon } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, AlertOctagon, Info, Save, Award, Activity, Droplets, Dna, Layers, Zap, Flame, ShieldAlert } from 'lucide-react';
 
 interface AnalysisResultsProps {
   results: ResultsType;
@@ -40,12 +40,11 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
 
   const t = TRANSLATIONS[currentLang] || TRANSLATIONS.en;
 
-  // Status Badge Styling
   const statusColors = {
-    Good: 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-emerald-500/20',
-    Moderate: 'bg-amber-500 text-slate-950 border-amber-400 shadow-amber-500/20',
-    Poor: 'bg-rose-500 text-white border-rose-400 shadow-rose-500/20',
-    Unsafe: 'bg-red-600 text-white border-red-500 shadow-red-600/30 animate-pulse',
+    Good: 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-emerald-500/30 glow-emerald',
+    Moderate: 'bg-amber-500 text-slate-950 border-amber-400 shadow-amber-500/30',
+    Poor: 'bg-rose-500 text-white border-rose-400 shadow-rose-500/30',
+    Unsafe: 'bg-red-600 text-white border-red-500 shadow-red-600/30 animate-pulse glow-rose',
   };
 
   return (
@@ -53,7 +52,7 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
       
       {/* Critical Hazard Alert Module */}
       {(isAflatoxinUnsafe || isUreaAdulterated || isSandContaminated) && (
-        <div className="p-6 rounded-3xl bg-gradient-to-r from-rose-950 via-red-900 to-rose-950 text-white shadow-2xl border-2 border-rose-500">
+        <div className="p-6 rounded-3xl bg-gradient-to-r from-rose-950 via-red-900 to-rose-950 text-white shadow-2xl border-2 border-rose-500/80 glow-rose">
           <div className="flex items-start gap-4">
             <div className="p-3.5 bg-rose-500 text-slate-950 rounded-2xl shadow-lg">
               <ShieldAlert className="w-8 h-8 stroke-[2.5]" />
@@ -75,12 +74,12 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
         </div>
       )}
 
-      {/* Main Score & Quality Status Card */}
-      <div className="bg-slate-900 rounded-3xl p-6 shadow-2xl border border-slate-800/80">
+      {/* Main Score & Quality Status Panel */}
+      <div className="bg-slate-900/80 backdrop-blur-xl rounded-3xl p-6 shadow-2xl border border-slate-800/80">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-6 pb-6 border-b border-slate-800">
           
           <div className="flex items-center gap-5">
-            <div className="relative w-24 h-24 flex items-center justify-center bg-slate-950 rounded-3xl border border-slate-800">
+            <div className="relative w-24 h-24 flex items-center justify-center bg-slate-950 rounded-3xl border border-slate-800 shadow-inner">
               <div className="text-center">
                 <span className="text-3xl font-black text-white font-mono leading-none">{overallScore}</span>
                 <span className="text-[10px] font-bold text-slate-400 block mt-0.5">/ 100</span>
@@ -95,7 +94,7 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
               <p className="text-xs text-slate-400 mt-0.5">NIR Spectrometry & Contamination Index</p>
               
               <div className="mt-2.5 flex items-center gap-2">
-                <span className={`px-4 py-1.5 rounded-xl text-xs font-black border shadow-md ${statusColors[qualityStatus]}`}>
+                <span className={`px-4 py-1.5 rounded-xl text-xs font-black border shadow-md font-mono ${statusColors[qualityStatus]}`}>
                   STATUS: {qualityStatus.toUpperCase()}
                 </span>
               </div>
@@ -103,14 +102,14 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
           </div>
 
           <div className="text-right">
-            <span className="text-xs font-mono text-slate-400 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800 block">
-              Grade: <strong className="text-emerald-400 text-sm">{qualityRating}</strong>
+            <span className="text-xs font-mono text-slate-400 bg-slate-950 px-3.5 py-2 rounded-2xl border border-slate-800 block">
+              Grade: <strong className="text-emerald-400 text-base">{qualityRating}</strong>
             </span>
           </div>
 
         </div>
 
-        {/* Adulteration & Contamination Chips Row */}
+        {/* Adulteration Chips Row */}
         <div className="pt-4">
           <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-2">
             {t.adulteration}:
@@ -133,10 +132,10 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
       </div>
 
       {/* Extended Nutritional Metrics Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
         
         {/* Crude Protein */}
-        <div className="bg-slate-900 p-4 rounded-2xl border border-slate-800">
+        <div className="bg-slate-900/80 p-4 rounded-2xl border border-slate-800/80">
           <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Crude Protein</span>
           <div className="mt-2 text-2xl font-black text-white font-mono">
             {typeof crudeProtein === 'number' ? `${crudeProtein}%` : 'NA'}
@@ -145,7 +144,7 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
         </div>
 
         {/* Moisture */}
-        <div className="bg-slate-900 p-4 rounded-2xl border border-slate-800">
+        <div className="bg-slate-900/80 p-4 rounded-2xl border border-slate-800/80">
           <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Moisture Content</span>
           <div className="mt-2 text-2xl font-black text-blue-400 font-mono">
             {moisture}%
@@ -154,7 +153,7 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
         </div>
 
         {/* Crude Fiber */}
-        <div className="bg-slate-900 p-4 rounded-2xl border border-slate-800">
+        <div className="bg-slate-900/80 p-4 rounded-2xl border border-slate-800/80">
           <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Crude Fiber</span>
           <div className="mt-2 text-2xl font-black text-amber-400 font-mono">
             {typeof crudeFiber === 'number' ? `${crudeFiber}%` : 'NA'}
@@ -163,7 +162,7 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
         </div>
 
         {/* Energy Value TDN */}
-        <div className="bg-slate-900 p-4 rounded-2xl border border-slate-800">
+        <div className="bg-slate-900/80 p-4 rounded-2xl border border-slate-800/80">
           <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Energy (TDN)</span>
           <div className="mt-2 text-2xl font-black text-emerald-400 font-mono">
             {typeof energyTdn === 'number' ? `${energyTdn}%` : 'NA'}
@@ -175,30 +174,30 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
 
       </div>
 
-      {/* Aflatoxins & Mycotoxins Card */}
-      <div className="bg-slate-900 rounded-3xl p-5 border border-slate-800 flex items-center justify-between">
+      {/* Aflatoxins & Mycotoxins Module */}
+      <div className="bg-slate-900/80 rounded-3xl p-5 border border-slate-800/80 flex items-center justify-between shadow-lg">
         <div className="flex items-center gap-3">
-          <div className={`p-2.5 rounded-xl ${isAflatoxinUnsafe ? 'bg-rose-500 text-slate-950' : 'bg-slate-800 text-slate-400'}`}>
-            <Flame className="w-5 h-5" />
+          <div className={`p-3 rounded-2xl ${isAflatoxinUnsafe ? 'bg-rose-500 text-slate-950 glow-rose' : 'bg-slate-800 text-slate-400'}`}>
+            <Flame className="w-5 h-5 stroke-[2.5]" />
           </div>
           <div>
-            <h4 className="text-xs font-extrabold text-white uppercase tracking-wider">Aflatoxins & Mycotoxin Contamination</h4>
+            <h4 className="text-xs font-black text-white uppercase tracking-wider">Aflatoxins & Mycotoxin Level</h4>
             <p className="text-[11px] text-slate-400 mt-0.5">Threshold: &lt;18 ppb for dairy cattle milk safety</p>
           </div>
         </div>
 
         <div className="text-right font-mono">
-          <span className={`text-xl font-black ${isAflatoxinUnsafe ? 'text-rose-400' : 'text-emerald-400'}`}>
+          <span className={`text-2xl font-black ${isAflatoxinUnsafe ? 'text-rose-400' : 'text-emerald-400'}`}>
             {aflatoxinPpb} ppb
           </span>
-          <span className={`text-[10px] block font-bold uppercase ${isAflatoxinUnsafe ? 'text-rose-400' : 'text-slate-500'}`}>
+          <span className={`text-[10px] block font-black uppercase ${isAflatoxinUnsafe ? 'text-rose-400' : 'text-slate-500'}`}>
             {isAflatoxinUnsafe ? 'UNSAFE TOXIN' : 'SAFE LIMIT'}
           </span>
         </div>
       </div>
 
-      {/* Categorized AI Advisories */}
-      <div className="bg-slate-900 rounded-3xl p-6 shadow-2xl border border-slate-800/80">
+      {/* Categorized AI Farmer Advisories */}
+      <div className="bg-slate-900/80 backdrop-blur-xl rounded-3xl p-6 shadow-2xl border border-slate-800/80">
         <div className="flex items-center justify-between pb-4 border-b border-slate-800">
           <div className="flex items-center gap-2">
             <Activity className="w-5 h-5 text-emerald-400" />
@@ -252,7 +251,7 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
             type="button"
             onClick={onSaveToHistory}
             disabled={isSaved}
-            className={`w-full py-4 px-5 rounded-2xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2.5 transition-all shadow-xl ${
+            className={`w-full py-4 px-5 rounded-2xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2.5 transition-all shadow-xl font-sans ${
               isSaved
                 ? 'bg-emerald-950 text-emerald-400 border border-emerald-800/80 cursor-default'
                 : 'bg-white hover:bg-slate-100 text-slate-950 shadow-white/10'
