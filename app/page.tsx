@@ -6,6 +6,7 @@ import { Header } from '@/components/Header';
 import { Navigation, TabType } from '@/components/Navigation';
 import { SensorSimulator } from '@/components/SensorSimulator';
 import { AnalysisResults } from '@/components/AnalysisResults';
+import { AiNutritionistEvaluator } from '@/components/AiNutritionistEvaluator';
 import { HistoryAndCertificate } from '@/components/HistoryAndCertificate';
 import { AdvisoryGuide } from '@/components/AdvisoryGuide';
 import { SensorSpecs } from '@/components/SensorSpecs';
@@ -118,7 +119,7 @@ export default function Home() {
         setCurrentLang={setCurrentLang}
       />
 
-      {/* Navigation (Desktop Top Bar / Mobile Fixed Bottom Bar) */}
+      {/* Navigation */}
       <Navigation
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -170,7 +171,7 @@ export default function Home() {
                 />
               </div>
 
-              {/* Right Column: Analytics & Advisories */}
+              {/* Right Column: Analytics & Expert AI Evaluator */}
               <div className="lg:col-span-6 space-y-6">
                 <AnalysisResults
                   results={results}
@@ -178,6 +179,8 @@ export default function Home() {
                   isSaved={currentSavedState}
                   currentLang={currentLang}
                 />
+
+                <AiNutritionistEvaluator inputs={inputs} />
               </div>
 
             </div>
@@ -205,7 +208,7 @@ export default function Home() {
       <footer className="mt-auto py-6 bg-slate-950 text-slate-500 text-xs border-t border-slate-900 text-center">
         <div className="max-w-7xl mx-auto px-4">
           <p className="font-bold text-slate-400">
-            SmartFeed AI — Problem Statement 3: Rapid Feed & Silage Quality System
+            SmartFeed AI — Precision Livestock Nutritionist & Veterinary Feed Expert System
           </p>
           <p className="mt-1 text-slate-600">
             Portable AI, NIR & Computer Vision Solution for Dairy Farmers • ID 26111
